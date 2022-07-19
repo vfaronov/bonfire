@@ -183,13 +183,16 @@ def run(host,
     stream_filter = None
     if stream or (userinfo["permissions"] != ["*"] and gl_api.default_stream is None):
         if not stream:
-            streams = gl_api.streams()["streams"]
+            options = [(s["id"], "Stream '{}' (id: {})".format(s["title"], s["id"]))
+                       for s in gl_api.streams()["streams"]]
+            options += [(None, "All streams")]
             click.echo("Please select a stream to query:")
-            for i, stream in enumerate(streams):
-                click.echo("{}: Stream '{}' (id: {})".format(i, stream["title"], stream["id"]))
+            for i, (_, title) in enumerate(options):
+                click.echo("{}: {}".format(i, title))
             i = click.prompt("Enter stream number:", type=int, default=0)
-            stream = streams[i]["id"]
-        stream_filter = "streams:{}".format(stream)
+            (stream, _) = options[i]
+        if stream:
+            stream_filter = "streams:{}".format(stream)
 
     # Create the initial query object
     q = SearchQuery(search_range=sr, query=query, limit=limit, filter=stream_filter, fields=fields, sort=sort,
