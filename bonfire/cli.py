@@ -41,7 +41,7 @@ from .formats import tail_format, dump_format
 @click.option("-l", "--interval", default=1000, help="Polling interval in ms (default: 1000)")
 @click.option("-n", "--limit", default=10, help="Limit the number of results (default: 10)")
 @click.option("-a", "--latency", default=2, help="Latency of polling queries (default: 2)")
-@click.option("-r", "--stream", default=None, help="Stream ID of the stream to query (default: no stream filter)")
+@click.option("-r", "--stream", default=None, help="Stream ID of the stream to query (default: no stream filter; use 'prompt' for interactive prompt)")
 @click.option('--field', '-e', multiple=True, help="Fields to include in the query result", default=["message"])
 @click.option('--template-option', '-x', multiple=True, help="Template options for the stored query")
 @click.option('--sort', '-s', default=None, help="Field used for sorting (default: timestamp)")
@@ -179,17 +179,15 @@ def run(host,
     # Get the user permissions
     userinfo = gl_api.user_info(username)
 
-    # If the permissions are not set or a stream is specified
-    stream_filter = None
-    if stream or (userinfo["permissions"] != ["*"] and gl_api.default_stream is None):
-        if not stream:
-            streams = gl_api.streams()["streams"]
-            click.echo("Please select a stream to query:")
-            for i, stream in enumerate(streams):
-                click.echo("{}: Stream '{}' (id: {})".format(i, stream["title"], stream["id"]))
-            i = click.prompt("Enter stream number:", type=int, default=0)
-            stream = streams[i]["id"]
-        stream_filter = "streams:{}".format(stream)
+    if stream == "prompt":
+        streams = gl_api.streams()["streams"]
+        click.echo("Please select a stream to query:")
+        for i, stream in enumerate(streams):
+            click.echo("{}: Stream '{}' (id: {})".format(i, stream["title"], stream["id"]))
+        i = click.prompt("Enter stream number:", type=int, default=0)
+        stream = streams[i]["id"]
+
+    stream_filter = "streams:{}".format(stream) if stream else None
 
     # Create the initial query object
     q = SearchQuery(search_range=sr, query=query, limit=limit, filter=stream_filter, fields=fields, sort=sort,
